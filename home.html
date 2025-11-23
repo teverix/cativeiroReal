@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Cativeiro Real – Home</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body {
+        margin: 0;
+        background: #0b0b0b;
+        font-family: "Inter", sans-serif;
+        color: #eaeaea;
+    }
+
+    header {
+        background: #111;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #222;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 20px;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    nav button {
+        background: #1a1a1a;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        color: #ccc;
+        cursor: pointer;
+        margin-left: 5px;
+    }
+
+    nav button.active {
+        background: #2a2a2a;
+        color: #fff;
+    }
+
+    .feed-container {
+        padding: 15px;
+    }
+
+    .post {
+        background: #151515;
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 12px;
+        border: 1px solid #222;
+    }
+
+    .post img {
+        width: 100%;
+        border-radius: 8px;
+        margin-top: 8px;
+    }
+
+    .post-author {
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .post-text {
+        margin: 6px 0;
+        font-size: 14px;
+        color: #cfcfcf;
+    }
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    .actions button {
+        background: #222;
+        border: none;
+        padding: 6px 10px;
+        color: #ccc;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .new-post {
+        position: fixed;
+        bottom: 15px;
+        right: 15px;
+        background: #1f1f1f;
+        border: 1px solid #333;
+        padding: 14px;
+        border-radius: 12px;
+    }
+
+    .new-post input, .new-post select {
+        width: 100%;
+        background: #0f0f0f;
+        border: 1px solid #333;
+        padding: 8px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        color: #fff;
+    }
+
+    .new-post button {
+        width: 100%;
+        background: #2b2b2b;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+    }
+
+</style>
+</head>
+<body>
+
+<header>
+    <h1>Cativeiro Real</h1>
+    <nav>
+        <button class="tab active" data-tab="todos">Feed</button>
+        <button class="tab" data-tab="arte">Artes</button>
+        <button class="tab" data-tab="meme">Memes</button>
+        <button class="tab" data-tab="cativeiro">Cativeiro</button>
+        <button class="tab" data-tab="admin">Admin</button>
+    </nav>
+</header>
+
+<div class="feed-container" id="feed"></div>
+
+<div class="new-post">
+    <input type="text" id="post-text" placeholder="Escreva algo...">
+    
+    <select id="post-tipo">
+        <option value="meme">Meme</option>
+        <option value="arte">Arte</option>
+        <option value="cativeiro">Cativeiro</option>
+    </select>
+
+    <input type="file" id="post-img">
+
+    <button onclick="enviarPost()">Postar</button>
+</div>
+
+<script>
+const API = "https://seu-railway-url-aqui"; // Substituir depois
+
+let usuario = localStorage.getItem("user");
+if (!usuario) window.location.href = "index.html";
+
+let abaAtual = "todos";
+
+document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        abaAtual = btn.dataset.tab;
+        carregarPosts();
+    });
+});
+
+async function carregarPosts() {
+    const res = await fetch(API + "/posts");
+    const posts = await res.json();
+
+    const filtrados = (abaAtual === "todos")
+        ? posts
+        : posts.filter(p => p.tipo === abaAtual);
+
+    document.getElementById("feed").innerHTML =
+        filtrados.map(p => `
+            <div class="post">
+                <div class="post-author">@${p.autor}</div>
+                <div class="post-text">${p.texto}</div>
+                ${p.imagem ? `<img src="${API}/imagens/${p.imagem}">` : ""}
+                <div class="actions">
+                    <button onclick="like(${p.id})">❤️ ${p.likes}</button>
+                    <button onclick="comentar(${p.id})">💬 Comentar</button>
+                </div>
+            </div>
+        `).join("");
+}
+
+async function like(id) {
+    await fetch(API + "/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: id })
+    });
+    carregarPosts();
+}
+
+async function comentar(id) {
+    const texto = prompt("Comentário:");
+    if (!texto) return;
+    await fetch(API + "/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            postId: id,
+            autor: usuario,
+            texto
+        })
+    });
+    carregarPosts();
+}
+
+async function enviarPost() {
+    const texto = document.getElementById("post-text").value;
+    const tipo = document.getElementById("post-tipo").value;
+    const img = document.getElementById("post-img").files[0];
+
+    const form = new FormData();
+    form.append("autor", usuario);
+    form.append("texto", texto);
+    form.append("tipo", tipo);
+    if (img) form.append("imagem", img);
+
+    await fetch(API + "/posts", {
+        method: "POST",
+        body: form
+    });
+
+    document.getElementById("post-text").value = "";
+    document.getElementById("post-img").value = "";
+
+    carregarPosts();
+}
+
+carregarPosts();
+</script>
+
+</body>
+</html>

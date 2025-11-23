@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Login - Cativeiro Real</title>
+<style>
+    :root {
+        --bg: #0e0e0f;
+        --surface: #1a1a1c;
+        --surface2: #222224;
+        --txt: #e3e3e6;
+        --accent: #4a84ff;
+        --radius: 14px;
+    }
+    body {
+        background: var(--bg);
+        color: var(--txt);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        font-family: "Roboto", sans-serif;
+    }
+    .card {
+        background: var(--surface);
+        padding: 28px;
+        border-radius: var(--radius);
+        width: 360px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    input {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: var(--radius);
+        background: var(--surface2);
+        color: var(--txt);
+        font-size: 1rem;
+    }
+    button {
+        padding: 14px;
+        border: none;
+        border-radius: var(--radius);
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    a {
+        color: var(--accent);
+        text-align: center;
+        display: block;
+        text-decoration: none;
+        margin-top: 6px;
+    }
+</style>
+</head>
+<body>
+
+<div class="card">
+    <h2 style="margin:0;font-size:1.4rem">Entrar</h2>
+
+    <input id="user" placeholder="Usuário">
+    <input id="pass" type="password" placeholder="Senha">
+
+    <button onclick="login()">Entrar</button>
+
+    <a href="register.html">Criar conta</a>
+</div>
+
+<script>
+async function login(){
+    const user = document.getElementById("user").value.trim();
+    const pass = document.getElementById("pass").value.trim();
+
+    if(!user || !pass) return alert("Preencha tudo.");
+
+    const req = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({user, pass})
+    });
+
+    const res = await req.json();
+
+    if(res.ok){
+        localStorage.setItem("acr_user", user);
+        location.href = "home.html";
+    } else {
+        alert(res.msg);
+    }
+}
+</script>
+
+</body>
+</html>
+
